@@ -1,0 +1,7 @@
+# 把 use-computer 插件插进宿主。
+#
+# 一行插入就够了：它依赖的 tools 和 subagents 两个服务都在根层常驻，
+# 不需要进带 isolate 的组（那是 compaction 那种被模式独占的服务才需要）。
+- insert:
+    - id: use-computer
+      name: dsh-use-computer

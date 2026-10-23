@@ -1,0 +1,18 @@
+# 依赖
+node_modules/
+
+# 运行时资产：模型和推理程序体积很大，不进仓库
+models/
+llama.cpp/
+
+# 日志与调试产物
+*.log
+logs/
+
+# 截图
+browser-screenshots/
+
+# 系统杂项
+.DS_Store
+Thumbs.db
+desktop.ini

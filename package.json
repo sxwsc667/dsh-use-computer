@@ -1,0 +1,50 @@
+{
+  "name": "dsh-use-computer",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 插件：让模型直接操作 Windows 桌面——看屏幕、找控件、点按、打字。坐标不进对话，先用 UIA 控件树、再用专用 2B 定位模型算位置；支持一段脚本连续操作和连按三次 ESC 急停。",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "use-computer": "./bin/use-computer.js"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "lib",
+    "bin",
+    "DESIGN.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "computer-use",
+    "desktop-automation",
+    "windows",
+    "uia",
+    "grounding"
+  ],
+  "author": "xunling",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sxwsc667/dsh-use-computer.git"
+  },
+  "homepage": "https://github.com/sxwsc667/dsh-use-computer#readme",
+  "bugs": {
+    "url": "https://github.com/sxwsc667/dsh-use-computer/issues"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "//": "这个标记文件只为告诉 Node：本目录下的 .js 按 CommonJS 解析。根目录的 package.json 写了 type=module，而命令行入口用的是 require。",
+  "type": "commonjs"
+}

@@ -1,0 +1,4 @@
+{
+  "//": "这个标记文件只为告诉 Node：本目录下的 .js 按 CommonJS 解析。根目录的 package.json 写了 type=module（插件入口 index.js 必须是 ESM），但 lib 下的模块同时要被命令行工具 require，两边的规矩不一样。",
+  "type": "commonjs"
+}
