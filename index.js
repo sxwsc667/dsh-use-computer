@@ -24,6 +24,7 @@ for (const 模块相对路径 of [
   './lib/panel-client.js',
   './lib/grounding-client.js',
   './lib/pipe-protocol.js',
+  './lib/model-store.js',
 ]) {
   try {
     delete require.cache[require.resolve(模块相对路径)]
@@ -35,6 +36,7 @@ for (const 模块相对路径 of [
 const { 请求桌面, 启动助手服务, 关闭助手服务 } = require('./lib/assistant-client.js')
 const { 定位 } = require('./lib/grounding-client.js')
 const 面板 = require('./lib/panel-client.js')
+const 模型仓库 = require('./lib/model-store.js')
 
 /**
  * 本插件的稳定标识，和 cordis.patch.yml 里插入那一行的 id 对应。
@@ -347,6 +349,12 @@ async function 找目标(目标, 选项 = {}) {
   }
 
   // ---- 第二步：视觉定位。UIA 找不到名字的（图标、canvas 里的东西、游戏画面）走这条 ----
+  // 先确认模型齐不齐：缺的时候不要起 llama-server（它只会报一堆看不懂的加载错误），
+  // 直接把"放哪、去哪下"讲清楚。这一步只在 UIA 没命中时才有代价。
+  const 视觉状况 = 模型仓库.视觉能力状况()
+  if (!视觉状况.就绪) {
+    throw new Error(`UIA 里没有「${目标}」，要用视觉定位时发现文件不全。\n${模型仓库.下载指引(视觉状况)}`)
+  }
   let 区域 = 选项.区域
   if (区域 === undefined || 区域 === null) {
     // 没给范围就默认用当前活动窗口：在一个窗口里找，比在全屏找准得多

@@ -102,33 +102,96 @@ UIA 那条路设了分数门槛（低于 75 分当没找到）和容器降权，
 git clone https://github.com/sxwsc667/dsh-use-computer.git E:\projects\dsh-use-computer
 ```
 
-### 2. 准备定位模型（可选，但强烈建议）
+### 2. 下载定位要用的文件（可选，但强烈建议）
 
-不装模型时，插件仍能操作**有 UIA 名字的控件**（保存、确定、关闭这类）；遇到图标、画布、游戏画面会报错，因为视觉那条路没有可用的服务。
+不装这些文件时，插件仍能操作**有 UIA 名字的控件**（保存、确定、关闭这类）；遇到图标、画布、游戏画面会报错，因为视觉那条路没有可用的服务。
 
-装的话需要两样东西：
+**插件不会自己下载任何东西。** 文件加起来 2.3 GB，下不下、下到哪由你决定，所以下面把地址和位置都写清楚，照着放就行。
 
-- **UGround-V1-2B 的 GGUF 权重**：`UGround-V1-2B.Q4_K_M.gguf`（约 941 MB）和视觉投影 `mmproj-UGround-V1-2B.f16.gguf`（约 1.3 GB）。模型来源见 [DESIGN.md](DESIGN.md) 第七节。
-- **llama.cpp 的 llama-server**：Windows 版可执行文件。
+#### 放在哪
 
-默认目录结构：
+全部放在 DSH 数据目录下的固定路径（默认 `%USERPROFILE%\.dsh\models\use-computer`）：
 
 ```
-use-computer/
-├── models/
-│   └── UGround-V1-2B-gguf/
-│       ├── UGround-V1-2B.Q4_K_M.gguf
-│       └── mmproj-UGround-V1-2B.f16.gguf
-└── llama.cpp/
-    └── bin/
+%USERPROFILE%\.dsh\models\use-computer\
+├── UGround-V1-2B-gguf\
+│   ├── UGround-V1-2B.Q4_K_M.gguf      940 MB
+│   └── mmproj-UGround-V1-2B.f16.gguf  1270 MB
+└── llama.cpp\
+    └── bin\
         └── llama-server.exe
 ```
 
-不想放这些位置也没关系，用环境变量指过去，见下一节。
+#### 下载两个模型文件
+
+放进上面的 `UGround-V1-2B-gguf\` 目录：
+
+| 文件 | 地址 |
+| --- | --- |
+| `UGround-V1-2B.Q4_K_M.gguf` | https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/UGround-V1-2B.Q4_K_M.gguf |
+| `mmproj-UGround-V1-2B.f16.gguf` | https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/mmproj-UGround-V1-2B.f16.gguf |
+
+PowerShell 一行一个（`-C` 是断点续传，断了重跑同一条命令接着下）：
+
+```powershell
+$d = "$env:USERPROFILE\.dsh\models\use-computer\UGround-V1-2B-gguf"
+New-Item -ItemType Directory -Force -Path $d | Out-Null
+curl.exe -L -C - -o "$d\UGround-V1-2B.Q4_K_M.gguf" "https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/UGround-V1-2B.Q4_K_M.gguf"
+curl.exe -L -C - -o "$d\mmproj-UGround-V1-2B.f16.gguf" "https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/mmproj-UGround-V1-2B.f16.gguf"
+```
+
+下完核对 SHA-256（两个值必须一字不差）：
+
+```
+8536bb397371006d06afa5047453e6a8e224d2ace299be68533453f7b3c7a849  UGround-V1-2B.Q4_K_M.gguf
+dfcf96e6a1b3b19e89480388f5edc8e49a1ac7bef3533cf17245c5fd92124a54  mmproj-UGround-V1-2B.f16.gguf
+```
+
+```powershell
+Get-FileHash "$d\UGround-V1-2B.Q4_K_M.gguf" -Algorithm SHA256
+Get-FileHash "$d\mmproj-UGround-V1-2B.f16.gguf" -Algorithm SHA256
+```
+
+#### 下载推理程序
+
+用 llama.cpp 官方的 Windows 预编译包（`b11838` 的 CPU 版，约 23 MB）：
+
+```
+https://github.com/ggml-org/llama.cpp/releases/download/b11838/llama-b11838-bin-win-cpu-x64.zip
+```
+
+```powershell
+$root = "$env:USERPROFILE\.dsh\models\use-computer"
+curl.exe -L -o "$root\llama.zip" "https://github.com/ggml-org/llama.cpp/releases/download/b11838/llama-b11838-bin-win-cpu-x64.zip"
+Expand-Archive "$root\llama.zip" -DestinationPath "$root\llama.cpp" -Force
+Get-ChildItem "$root\llama.cpp" -Recurse -Filter llama-server.exe
+```
+
+命令会打印出实际路径；**只要解压出来的 `llama-server.exe` 不在 `$root\llama.cpp\bin\` 下，就把 `bin` 这一层补上或者整目录挪过去**，让最终路径是 `$root\llama.cpp\bin\llama-server.exe`。
+
+有 N 卡想更快的话，可以换同一版本的 CUDA 或 Vulkan 包（`llama-b11838-bin-win-cuda-12.4-x64.zip` 约 260 MB，还要再下一个 `cudart` 运行库包），解压到同一个位置；速度提升明显，但显存不够时会退回 CPU，效果因机器而异。
+
+#### 检查放对了没有
+
+```
+use-computer model
+```
+
+它会逐个报每个文件在不在、缺了该下哪个地址。不想放默认位置也没关系，用环境变量指过去，见下一节。
+
+> 为什么不自动下载：模型 2.3 GB，自动下会在没网、限速、公司代理的环境里静默卡住，而且用户根本不知道硬盘上多了什么。插件只负责说清楚"放哪、去哪拿、怎么核对"。
 
 ### 3. 挂进 DSH
 
-在 DSH 的 profile（配置档）里加依赖和 bundle。以本机的 `profiles/web` 为例，`package.json` 里加两处：
+最省事的方式是从 npm 装进 profile：
+
+```
+dsh plugin --profile web add dsh-use-computer
+```
+
+装完重启 DSH。插件的 `cordis.patch.yml` 会自动把它挂进宿主根层，不需要手写工具注册。
+
+要改代码、想让自己本地的源码生效时，用 `link:` 挂源码目录（这也是开发时的做法）：
 
 ```json
 {
@@ -145,7 +208,9 @@ use-computer/
 }
 ```
 
-然后在 profile 目录执行 `pnpm install`，重启 DSH。插件的 `cordis.patch.yml` 会自动把它挂进宿主根层，不需要手写工具注册。
+然后在 profile 目录执行 `pnpm install`，重启 DSH。
+
+**两种方式互斥**：`link:` 指向源码目录时，profile 里的插件就是那个目录，升级、重装都不会覆盖它；用 npm 装则是 `node_modules` 里的真实副本，改源码不影响运行中的那份。推荐"源码一份、运行一份"：源码留在自己的目录里改，运行用 npm 装。插件目录里不再放模型和推理程序，所以换哪种方式都不需要重下 2.3 GB。
 
 如果 profile 开了热重载（`hmr`），可以把插件目录加进监听列表：
 
@@ -167,17 +232,23 @@ use-computer status
 use-computer move 800 400
 use-computer look --max-width 1600
 use-computer windows --json
+use-computer model
 ```
+
+`use-computer model` 只报现状：每个模型文件在哪、在不在、缺了去哪里下。它不会替你下载。
 
 ## 配置
 
 | 环境变量 | 默认值 | 作用 |
 | --- | --- | --- |
-| `DSH_GROUNDING_SERVER` | `<插件目录>/llama.cpp/bin/llama-server.exe` | llama-server 可执行文件路径 |
-| `DSH_GROUNDING_MODEL` | `<插件目录>/models/UGround-V1-2B-gguf/UGround-V1-2B.Q4_K_M.gguf` | 模型权重路径 |
-| `DSH_GROUNDING_MMPROJ` | `<插件目录>/models/UGround-V1-2B-gguf/mmproj-UGround-V1-2B.f16.gguf` | 视觉投影（mmproj）路径 |
+| `DSH_USE_COMPUTER_HOME` | `%USERPROFILE%\.dsh\models\use-computer` | 下面三个相对它定位的数据目录 |
+| `DSH_GROUNDING_SERVER` | `<数据目录>\llama.cpp\bin\llama-server.exe` | llama-server 可执行文件路径 |
+| `DSH_GROUNDING_MODEL` | `<数据目录>\UGround-V1-2B-gguf\UGround-V1-2B.Q4_K_M.gguf` | 模型权重路径 |
+| `DSH_GROUNDING_MMPROJ` | `<数据目录>\UGround-V1-2B-gguf\mmproj-UGround-V1-2B.f16.gguf` | 视觉投影（mmproj）路径 |
 | `DSH_GROUNDING_PORT` | `8080` | 定位服务端口 |
 | `DSH_GROUNDING_HOST` | `127.0.0.1` | 定位服务地址 |
+
+模型和推理程序放在数据目录、而不是插件目录，是因为插件从 npm 装下来以后，重装、升级都会覆盖插件目录；数据目录不动，2.3 GB 就不用每升一次版本重下一遍。
 
 模型服务由插件按需拉起，加载完成后跨调用复用；助手进程常驻，只由 `desktop_start` / `desktop_stop` 开关。
 
@@ -225,7 +296,7 @@ use-computer windows --json
 | --- | --- | --- |
 | 提示「桌面助手已经被 desktop_stop 关掉了」 | 之前显式关过 | 先调 `desktop_start` |
 | 提示「用户连按三次 ESC，已暂停鼠标操作」 | 人按了急停 | 由真人再按三次 ESC 恢复；调用方重试无效 |
-| 报错找不到视觉定位所需的文件 | 模型或 llama-server 没放对位置 | 按默认目录放好，或用 `DSH_GROUNDING_*` 环境变量指定 |
+| 报错找不到视觉定位所需的文件 | 模型或 llama-server 没放对位置 | 跑 `use-computer model` 看缺哪个、去哪下；或按报错里的目录放好，或用 `DSH_GROUNDING_*` 环境变量指定 |
 | UIA 找不到，视觉也定位失败 | 目标不在 `region` 里，或描述太模糊 | 给一个更紧的 `region`，或换一种说法 |
 | 助手起不来 | 看日志 | `%TEMP%\dsh-use-computer\assistant.log` |
 | 视觉定位起不来 | 看日志 | `%TEMP%\dsh-use-computer\grounding.log` |
@@ -240,6 +311,7 @@ use-computer/
 ├── lib/
 │   ├── assistant-client.js  # 拉起/关闭桌面助手、发请求
 │   ├── grounding-client.js  # 视觉定位客户端（llama-server）
+│   ├── model-store.js       # 模型文件在哪、齐不齐、缺了去哪下（不下载）
 │   ├── panel-client.js      # 桌面浮窗控制端
 │   ├── pipe-protocol.js     # 命名管道协议
 │   └── assistant/
@@ -251,6 +323,8 @@ use-computer/
 ├── DESIGN.md                # 设计决策和踩坑记录（很长，按时间分节）
 └── CHANGELOG.md
 ```
+
+模型和推理程序**不在这个目录里**，见上面"2. 下载定位要用的文件"。
 
 `lib/` 和 `bin/` 是源码，不是构建产物，要提交。
 

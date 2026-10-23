@@ -37,6 +37,7 @@ function 打印帮助() {
   scroll [格数] [--at 坐标x,坐标y] 滚轮；负数向下、正数向上，默认向下 3 格
   stop                            立刻关掉助手进程和虚拟光标
                                   （插件里用 desktop_stop 关掉后，要 desktop_start 才能恢复）
+  model [--json]                   看视觉定位要用的模型和推理程序在哪、齐不齐；缺了给出下载地址
 
 开关：
   --json    直接打印原始 JSON，不排版
@@ -49,6 +50,7 @@ function 打印帮助() {
   use-computer type "你好，世界" --at 800 500
   use-computer key ctrl+s
   use-computer windows --json
+  use-computer model
 `)
 }
 
@@ -262,6 +264,27 @@ async function 执行命令(命令, 位置参数, 开关) {
             const 响应 = await 调用助手({ op: 'shutdown' })
             if (开关.json) return console.log(JSON.stringify(响应, null, 2))
             console.log('桌面助手和虚拟光标已关闭')
+            return
+        }
+
+        case 'model': {
+            // 只报位置和下载地址，不替用户下：模型合计 2.3 GB，下不下、下到哪由人决定
+            const 仓库 = require('../lib/model-store.js')
+            const 状况 = 仓库.视觉能力状况()
+            if (开关.json) {
+                return console.log(
+                    JSON.stringify({ 数据目录: 仓库.数据目录, 就绪: 状况.就绪, 文件: 仓库.模型概况() }, null, 2)
+                )
+            }
+            for (const 项 of 仓库.模型概况()) {
+                const 现状 = 项.就绪 ? '已就绪' : '缺'
+                console.log(`${项.就绪 ? '✓' : '✗'} ${项.文件名}  ${现状}  ${项.路径}`)
+            }
+            console.log(`${require('node:fs').existsSync(仓库.服务器路径) ? '✓' : '✗'} llama-server.exe  ${仓库.服务器路径}`)
+            if (!状况.就绪) {
+                console.log('')
+                console.log(仓库.下载指引(状况))
+            }
             return
         }
 
