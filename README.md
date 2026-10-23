@@ -122,32 +122,27 @@ git clone https://github.com/sxwsc667/dsh-use-computer.git E:\projects\dsh-use-c
         └── llama-server.exe
 ```
 
-#### 下载两个模型文件
+#### 准备两个模型文件（没有现成下载地址）
 
-放进上面的 `UGround-V1-2B-gguf\` 目录：
+这两个 GGUF 是从魔搭（ModelScope）上的原始权重 `osunlp/UGround-V1-2B` 自己转出来的，官方没有发布 GGUF，仓库也不托管（2.2 GB，不适合进 git，也不适合放 Release——本机实测上传只有 240 KB/s，2.2 GB 要两个多小时）。
 
-| 文件 | 地址 |
-| --- | --- |
-| `UGround-V1-2B.Q4_K_M.gguf` | https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/UGround-V1-2B.Q4_K_M.gguf |
-| `mmproj-UGround-V1-2B.f16.gguf` | https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/mmproj-UGround-V1-2B.f16.gguf |
+转换步骤在 [DESIGN.md](DESIGN.md) 第七节「数据从哪来」，概括是三步：
 
-PowerShell 一行一个（`-C` 是断点续传，断了重跑同一条命令接着下）：
+1. `convert_hf_to_gguf.py` 不带 `--mmproj` 转语言部分（约 2.9 GB f16）；
+2. 带 `--mmproj` 单独转视觉塔（约 1.3 GB）——一次只出一样，别指望一条命令全出；
+3. 用 `llama-quantize` 把语言部分压到 Q4_K_M。
+
+也可以从别处拿同名同哈希的文件，核对下面这两个值就说明是同一份：
+
+```
+8536bb397371006d06afa5047453e6a8e224d2ace299be68533453f7b3c7a849  UGround-V1-2B.Q4_K_M.gguf      986,046,624 字节
+dfcf96e6a1b3b19e89480388f5edc8e49a1ac7bef3533cf17245c5fd92124a54  mmproj-UGround-V1-2B.f16.gguf  1,331,655,712 字节
+```
 
 ```powershell
 $d = "$env:USERPROFILE\.dsh\models\use-computer\UGround-V1-2B-gguf"
 New-Item -ItemType Directory -Force -Path $d | Out-Null
-curl.exe -L -C - -o "$d\UGround-V1-2B.Q4_K_M.gguf" "https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/UGround-V1-2B.Q4_K_M.gguf"
-curl.exe -L -C - -o "$d\mmproj-UGround-V1-2B.f16.gguf" "https://github.com/sxwsc667/dsh-use-computer/releases/download/models-v1/mmproj-UGround-V1-2B.f16.gguf"
-```
-
-下完核对 SHA-256（两个值必须一字不差）：
-
-```
-8536bb397371006d06afa5047453e6a8e224d2ace299be68533453f7b3c7a849  UGround-V1-2B.Q4_K_M.gguf
-dfcf96e6a1b3b19e89480388f5edc8e49a1ac7bef3533cf17245c5fd92124a54  mmproj-UGround-V1-2B.f16.gguf
-```
-
-```powershell
+# 把两个文件放进 $d 之后核对：
 Get-FileHash "$d\UGround-V1-2B.Q4_K_M.gguf" -Algorithm SHA256
 Get-FileHash "$d\mmproj-UGround-V1-2B.f16.gguf" -Algorithm SHA256
 ```
